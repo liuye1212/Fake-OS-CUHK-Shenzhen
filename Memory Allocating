@@ -1,0 +1,65 @@
+/*
+ * MemoryAllocating.h
+ * This is memory allocating part done by Dorothy.
+ * ------------------------------------------------
+ * The idea to implement it is stated as following:
+ * We first need to define a map called "FunctionList" to relate every function with a representative value of it.
+ * For example Tetris -- 1, Snake Game --2, etc. which is similar to area code we did in the assignment.
+ * Use an int array with a specific size to simulate the whole memory space. array[whole_size]
+ * When memory is available to use, it has value 0, therefore the initial memory array is an array with all values 0.
+ * Given the size of memory that one program needs, we allocate some part of the memory to it. 
+ * For example, if Tetris starts running, and the size it needs is 20, then we will allocate array [0] = ... = array [20] = 1.
+ * When the job ends, free corresponding part of the array by assigning value to be 0 again to make this part memory available again.
+ * for examole, when we ends Tetris, we should assign array[0] = ... = array[20] = 0.
+ * Also need to include a method that can clear the whole memory space, which is just assign all value to be 0.
+ * The Algorithm to allocate the memory is that it always starts from the beginning, and it can split into pieces in order to save memory space.
+ * Use an example to illustrate it: if we have 2 functions are running, with representative value 1 and 2 respectively, and assume both sizes are 20
+ * then we will assign array[0] = .. = array[19] = 1, then array[20] = ... = array[30] = 2, that means we allocate memory to these 2 functions.
+ * now, if we ends function 1, we just need to assign array[0] = ... = array[19] = 0 to mean that 0-20 is available again.
+ * If we now need to start a new function 3 with size 30, we need to split this 30 to be 20 + 10, since the array[20] .. array[39] have been occupied.
+ * Then we just assign array[0] = ... = array[19] = 3, and array[40] = ... = array[49] = 3. 
+ * which means it occupies the first 20 positions and 40th to 49th position, in total, it's also of size 30.
+ */
+ 
+ /* 
+  * Suppose we have FunctionList, a map that maps function name to a representative value.
+  */
+ 
+ using namespace std;
+ const int totoalSize = 100; // totalSize can be changed later, I set it to be 100 initially.
+ 
+ class MemoryAllcator{
+ public:
+    // initialize the array to be a array with all value 0, that means the whole memory is available.
+    MemoryAllocator(){
+       for (int i = 0; i < totalSize; i++){
+          memory[i] = 0;
+       }
+    }
+    
+    // clearWholeMmeory, we assign every value to be 0, which means it's avaiable again.
+    void clearWholeMemory(){
+       for (int i = 0; i < totalSize; i++) {
+          memory[i] = 0;
+       }
+    }
+    
+    // freeMemoryOfFunction, when some function ends, we need to erase the corresponding memory it occupied before.
+    void freeMemoryOfFunction(string functionName){
+       int repValue = FunctionList[functionName];
+       for (int i = 0; i < totalSize; i++) {
+          if (memory[i] == repvalue) {
+             memory[i] = 0;
+          }
+       }
+    }
+    
+    // allocate memory for a function, given the function name
+    allocateMemory(string functionName) {
+       
+    }
+ 
+ private:
+    // use an array to denote the whole memory space with a limited size.
+    int memory[totalSize]; 
+ };
