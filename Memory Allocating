@@ -42,24 +42,48 @@
        for (int i = 0; i < totalSize; i++) {
           memory[i] = 0;
        }
+       for (Function f; f in ) 
     }
     
     // freeMemoryOfFunction, when some function ends, we need to erase the corresponding memory it occupied before.
-    void freeMemoryOfFunction(string functionName){
-       int repValue = FunctionList[functionName];
+    void freeMemoryOfFunction(Function functionName){
        for (int i = 0; i < totalSize; i++) {
-          if (memory[i] == repvalue) {
+          if (memory[i] == FunctionName.ID) {
              memory[i] = 0;
           }
        }
     }
     
     // allocate memory for a function, given the function name
-    allocateMemory(string functionName) {
-       
+    string allocateMemory(Function FunctionName) {
+       int size = FunctionName.size;
+       int memLeft = 0;   
+       // check how many zeros in the memory array
+       for (int i = 0; i < totalSize; i++) {
+           if(memory[i]==0) {memLeft++;}
+       } 
+       // if the program's memory size is smaller than the left memory, which means system can allocate some memory to it. 
+       if (size <= memLeft){
+          for (int i = 0; i < totalSize; i++) {
+             if (memory[i] == 0) {
+                memory[i] = FunctionName.ID;
+             }
+          }
+          return "Memory is allocated in the memory.";
+       } else {   //otherwise, just turn out that it fails to allocate memory to it.
+             return "Memory is not enough to allocate this job.";
+         }      
     }
  
  private:
     // use an array to denote the whole memory space with a limited size.
     int memory[totalSize]; 
+ 
+    // construct a structure called Function which includes some info about all funtions we have in our OS
+    struct Function {
+    int ID; // used for function id
+    int size; // used for memory size a program need
+    bool flag; // used to represent whether it occupies some memory. Flag = true means that the function occupies some memory.
+    };
+
  };
