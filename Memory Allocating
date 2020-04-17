@@ -1,0 +1,179 @@
+/* Mmeory allocation done by Dorothy
+ * This version will ask the user to input some information, for example,
+ * the choice to allocation memory or want to free some memory, or the size of memory he needed etc.
+ * When we combine our code together, we can modify the part that asks the user to input.
+ * We can add the function of allocating and free memory to every function we need to run when we test the OS
+ * so it can automatically allocate the memory when we start to run the program and free this memory region before we end the function. 
+ */
+
+
+#include <iostream>
+#include <stdlib.h>
+using namespace std;
+
+#define Busy 1;
+#define Free 0;
+#define OK 1;
+#define ERROR 0;
+#define MAX_SIZE 640;
+
+typedef int Status;
+int flag;
+
+typedef struct FreeArea{
+    long size;
+    long address;
+    int state;
+}ElemType;
+
+typedef struct DulNode{
+    ElemType data;
+    struct DulNode *prior;
+    struct DulNode *next;
+}DulNode, *DulLinkList;
+
+DulLinkList first_block;
+DulLinkList last_block;
+
+//here are 5 main functions in this file
+
+Status Alloc(int);
+Status free(int);
+Status FirstFit(int);
+void show();
+Status initblock();
+
+Status initblock(){
+    first_block = (DulLinkList)malloc(sizeof(DulNode));
+    last_block = (DulLinkList)malloc(sizeof(DulNode));
+    first_block->prior = NULL;
+    first_block->next = last_block;
+    last_block->prior = first_block;
+    last_block->next = NULL;
+    last_block->data.size = MAX_SIZE;
+    last_block->data.address = 0;
+    last_block->data.state = Free;
+    return OK;
+}
+
+void show(){
+    int flag = 0;
+    cout << "Memory Allocation: " << endl;
+    cout << "---------------------------------------------------------\n" << endl;
+    DulNode *p = first_block->next;
+    cout << "Region \t StartAddress \t MemorySize \t State \n" << endl;
+    while (p) {
+        cout << "  " << flag++ << "\t";
+        cout << "  " << p->data.address << "\t\t";
+        cout << "  " << p->data.size << "KB\t\t";
+        int freeState = Free;
+        if (p->data.state == freeState) {
+            cout << "free" << endl;
+        } else {
+            cout << "allocated"<< endl;
+        }
+        p = p->next;
+    }
+    cout << "---------------------------------------------------------\n" << endl;
+}
+
+
+Status FirstFit(int request){
+    DulLinkList temp = (DulLinkList)malloc(sizeof(DulNode));
+    temp->data.size = request;
+    temp->data.state = Busy;
+    DulNode *p = first_block->next;
+    while(p){
+        int freeState = Free;
+        if (p->data.size == request && p->data.state == freeState){
+            p->data.state = Busy;
+            return OK;
+            break;
+        }
+        if (p->data.size > request && p->data.state == freeState){
+            temp->prior = p->prior;
+            temp->next = p;
+            temp->data.address = p->data.address;
+            p->prior->next = temp;
+            p->prior = temp;
+            p->data.address = temp->data.address + temp->data.size;
+            p->data.size -= request;
+            return OK;
+            break;
+        }
+        p = p->next;
+    }
+    return ERROR;
+}
+
+
+Status free(int flag){
+    DulNode *p = first_block;
+    for (int i = 0; i <= flag; i++){
+        if (p != NULL) {
+            p=p->next;
+        } else {
+            return ERROR;
+        }
+    }
+
+    p->data.state = Free;
+    if(p->prior != first_block && p->prior->data.state == 0){
+        p->prior->data.size += p->data.size;
+        p->prior->next = p->next;
+        p->next->prior = p->prior;
+        p = p->prior;
+    }
+    if (p->next != last_block && p->next->data.state == 0){
+        p->data.size += p->next->data.size;
+        p->next->next->prior = p;
+        p->next = p->next->next;
+    }
+    if (p->next == last_block && p->next->data.state == 0) {
+        p->data.size += p->next->data.size;
+        p->next = NULL;
+    }
+    return OK;
+}
+
+Status Alloc(){
+    int request;
+    cout << "How much of memory do you need? Please enter an integer: " << endl;
+    cin >> request;
+    if (request <= 0) {
+        cout <<" This is not a valid size of memory."<< endl;
+        return ERROR;
+    } else {
+        if (FirstFit(request) == 1) {
+            cout << "Allocat successfully." << endl;
+        } else {cout << "FAIL." << endl;}
+        return OK;
+    }
+}
+
+int main(){
+    initblock();
+    int choice;
+    while(1){
+        show();
+        cout << "Please enter your choice followed by the instructions: " << endl;
+        cout << "0: quit" << endl;
+        cout << "1: allocate memory" << endl;
+        cout << "2: free memory" << endl;
+        cin >> choice;
+        if (choice == 0) {break;}
+        else if (choice == 1) {
+            Alloc();
+        }
+        else if (choice == 2){
+            int flag;
+            cout << "Which partition you want to free?" << endl;
+            cin >> flag;
+            free(flag);
+        } else {
+            cout <<"invalid input." << endl;
+            continue;
+        }
+    }
+    return 0;
+}
