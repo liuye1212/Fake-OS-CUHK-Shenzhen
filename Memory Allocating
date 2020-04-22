@@ -1,12 +1,7 @@
-/* Mmeory allocation done by Dorothy
- * This version will ask the user to input some information, for example,
- * the choice to allocation memory or want to free some memory, or the size of memory he needed etc.
- * When we combine our code together, we can modify the part that asks the user to input.
- * We can add the function of allocating and free memory to every function we need to run when we test the OS
- * so it can automatically allocate the memory when we start to run the program and free this memory region before we end the function. 
+/*
+ * This is memory allocation part done by Dorohty.
+ * In this part, I use the first-fit algorithm to allocate memory.
  */
-
-
 #include <iostream>
 #include <stdlib.h>
 using namespace std;
@@ -20,28 +15,40 @@ using namespace std;
 typedef int Status;
 int flag;
 
+
+/*
+ * FreeArea, which includes information we need to describe partail region of the whole
+ * memory space, for example, the size of the memory this block has, the start address
+ * and the state of this memory region (allocated or free).
+ */
 typedef struct FreeArea{
     long size;
     long address;
     int state;
+    int FunctionID;  //I add a new thing here, to make sure that allocation corresponds to specific function.
 }ElemType;
 
+
+/* construct a structure called DulNode, with 3 parts:
+ * data, and 2 pointers, one pointing to the prior block, the other pointing to the next one.
+ * the type of data is what we constructed before --
+ */
 typedef struct DulNode{
     ElemType data;
     struct DulNode *prior;
     struct DulNode *next;
-}DulNode, *DulLinkList;
+}DulNode, *DulLinkList;  // DulLinkList is a pointer pointing to a DulNode
 
 DulLinkList first_block;
 DulLinkList last_block;
 
 //here are 5 main functions in this file
 
-Status Alloc(int);
-Status free(int);
-Status FirstFit(int);
-void show();
-Status initblock();
+Status Alloc(int, int);  //allocate memory
+Status free(int);  //make some region available again
+Status FirstFit(int, int);  //the basic algorithm we used in this fake OS
+void show();  // show the result;
+Status initblock();  // initialize a block link.
 
 Status initblock(){
     first_block = (DulLinkList)malloc(sizeof(DulNode));
@@ -52,6 +59,7 @@ Status initblock(){
     last_block->next = NULL;
     last_block->data.size = MAX_SIZE;
     last_block->data.address = 0;
+    last_block->data.FunctionID = 0;
     last_block->data.state = Free;
     return OK;
 }
@@ -61,9 +69,10 @@ void show(){
     cout << "Memory Allocation: " << endl;
     cout << "---------------------------------------------------------\n" << endl;
     DulNode *p = first_block->next;
-    cout << "Region \t StartAddress \t MemorySize \t State \n" << endl;
+    cout << "Region \t FunctionID \t StartAddress \t MemorySize \t State \n" << endl;
     while (p) {
         cout << "  " << flag++ << "\t";
+        cout << "  " << p->data.FunctionID << "\t\t";
         cout << "  " << p->data.address << "\t\t";
         cout << "  " << p->data.size << "KB\t\t";
         int freeState = Free;
@@ -78,15 +87,17 @@ void show(){
 }
 
 
-Status FirstFit(int request){
+Status FirstFit(int request, int functionID){
     DulLinkList temp = (DulLinkList)malloc(sizeof(DulNode));
     temp->data.size = request;
     temp->data.state = Busy;
+    temp->data.FunctionID = functionID;
     DulNode *p = first_block->next;
     while(p){
         int freeState = Free;
         if (p->data.size == request && p->data.state == freeState){
             p->data.state = Busy;
+            p->data.FunctionID = functionID;
             return OK;
             break;
         }
@@ -107,8 +118,15 @@ Status FirstFit(int request){
 }
 
 
-Status free(int flag){
+Status free(int functionID){
+    int flag = 0;
     DulNode *p = first_block;
+    DulNode *q = first_block->next;
+    while (q) {
+        if (q->data.FunctionID == functionID) {break;}
+        flag++;
+        q = q->next;
+    }
     for (int i = 0; i <= flag; i++){
         if (p != NULL) {
             p=p->next;
@@ -118,62 +136,73 @@ Status free(int flag){
     }
 
     p->data.state = Free;
+    p->data.FunctionID = 0;
+    // 3 situations need to be considered
+    // this is the first situation, in which the region before the region you want to free
+    // is also available, then we need to connect those two regions
     if(p->prior != first_block && p->prior->data.state == 0){
         p->prior->data.size += p->data.size;
         p->prior->next = p->next;
         p->next->prior = p->prior;
         p = p->prior;
+        p->data.FunctionID = 0;
     }
+
+    // this is second situation, in which the region after the region you want to free
+    // is also avaiable, then we need to connect those two regions
     if (p->next != last_block && p->next->data.state == 0){
+        p->data.FunctionID = 0;
         p->data.size += p->next->data.size;
         p->next->next->prior = p;
         p->next = p->next->next;
     }
+
+    // the last situation is when the region after the region you want to free is
+    // the last block, then we need to connect them.
     if (p->next == last_block && p->next->data.state == 0) {
+        p->data.FunctionID = 0;
         p->data.size += p->next->data.size;
         p->next = NULL;
     }
     return OK;
 }
 
-Status Alloc(){
-    int request;
-    cout << "How much of memory do you need? Please enter an integer: " << endl;
-    cin >> request;
+Status Alloc(int request, int functionID){
     if (request <= 0) {
-        cout <<" This is not a valid size of memory."<< endl;
+        cout <<" This is not a valid size of memory."<< endl;  //connect to exception system
         return ERROR;
     } else {
-        if (FirstFit(request) == 1) {
+        if (FirstFit(request, functionID) == 1) {
             cout << "Allocat successfully." << endl;
-        } else {cout << "FAIL." << endl;}
+        } else {cout << "FAIL." << endl;}  // connect to exception system
         return OK;
     }
 }
 
+
+/*
+ * Notice in this part, I modify it such that it doesn't ask the user to input something;
+ * here I just set 3 functions f1,f2,f3 with function ID to be 1,2,3 and the corresponding
+ * size 50,100,40, to test my code.
+ * When combine it with our OS, we will set our functions with function ID and also size.
+ */
 int main(){
     initblock();
-    int choice;
-    while(1){
-        show();
-        cout << "Please enter your choice followed by the instructions: " << endl;
-        cout << "0: quit" << endl;
-        cout << "1: allocate memory" << endl;
-        cout << "2: free memory" << endl;
-        cin >> choice;
-        if (choice == 0) {break;}
-        else if (choice == 1) {
-            Alloc();
-        }
-        else if (choice == 2){
-            int flag;
-            cout << "Which partition you want to free?" << endl;
-            cin >> flag;
-            free(flag);
-        } else {
-            cout <<"invalid input." << endl;
-            continue;
-        }
-    }
+    show();
+    int function1 = 50; //functionID = 1
+    int function2 = 100;  //functionID = 2
+    int function4 = 40;  // functionID = 4
+    cout << "start running function 1" << endl;
+    Alloc(function1,1);
+    show();
+    cout << "start running function 2" << endl;
+    Alloc(function2,2);
+    show();
+    cout << "end runing funtion 1, thus free area 1" << endl;
+    free(1);
+    show();
+    cout << "start running function 4" << endl;
+    Alloc(function4,4);
+    show();
     return 0;
 }
